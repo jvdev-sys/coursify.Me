@@ -106,8 +106,6 @@ const Home = ({ route, navigation}) => {
                   setIsModalVisible(!isModalVisible); 
                   if(iconOption === 'expand-more') {
                     setIconOption('expand-less')
-                  }else{
-                    setIconOption('expand-more')
                   }
                 }}>
                 <Text style={styles.selectButtonText}>{option}</Text>
@@ -138,7 +136,7 @@ const Home = ({ route, navigation}) => {
                 })
               }
               {isModalVisible &&
-                <View style={styles.menu} onPress={() => { }}>
+                <View style={styles.menu} >
                   {options.map((item, index) => mountMenu(item, index))}
                 </View>
               }
