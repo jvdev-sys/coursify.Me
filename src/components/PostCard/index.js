@@ -15,8 +15,8 @@ const PostCard = ({ post, onPress, mediaURL ='https://blog.coursify.me/wp-conten
                   }}
               />
               <View style={styles.textBox}>
-                  <Text style={styles.categoryName}>{post.title.rendered.substring(0, 40)}...</Text>
-                  <Text style={styles.postName}>{post.content.rendered.replace(/<.*?>/g, '').substring(0, 150)}...</Text>
+                  <Text style={styles.categoryName}>{post.title.rendered.substring(0, 30)}...</Text>
+                  <Text style={styles.postName}>{post.content.rendered.replace(/<.*?>/g, '').substring(0, 120)}...</Text>
                   <Text style={styles.readMore}>Leia mais</Text>
               </View>
 
@@ -38,7 +38,8 @@ const styles = StyleSheet.create({
         margin: 10,
     },
     textBox: {
-        justifyContent: 'center',
+        flex: 1,
+        justifyContent: 'space-between',
         alignSelf: 'center',
         marginTop: 10,
         padding: 10, 
@@ -64,6 +65,6 @@ const styles = StyleSheet.create({
     },
     readMore: {
         color: Colors.darkYellow,
-        fontSize: 16,
+        fontSize: 16
     }
 })
