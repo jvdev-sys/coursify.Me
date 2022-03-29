@@ -1,5 +1,5 @@
 import { StyleSheet, Dimensions, View, StatusBar, ScrollView, Image, Text, TouchableOpacity } from 'react-native'
-import React , {useState} from 'react'
+import React , {useState, useEffect} from 'react'
 import { Colors } from '../../services/constants'
 import PostCard from '../../components/PostCard'
 import Header from '../../components/Header'
@@ -12,9 +12,10 @@ const WIDTH = Dimensions.get('screen').width;
 const Home = ({ route, navigation}) => {
 
   const { categories, media, posts } = route.params
+  const [allCategories, setAllCategories] = useState();
   const [option, setOption] = useState('Padrão')
-  const [iconOption, setIconOption] = useState(isModalVisible ? 'expand-less' : 'expand-more')
-  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [iconOption, setIconOption] = useState(onPressed ? 'expand-less' : 'expand-more')
+  const [onPressed, setOnPressed] = useState(false)
   const [options, setOptions] = useState([
     { value: 'Padrão', selected: false },
     { value: 'A-Z', selected: false },
@@ -23,14 +24,137 @@ const Home = ({ route, navigation}) => {
     { value: 'Menos Visualizados', selected: false },
   ])
 
+
+
+  useEffect(() => {
+    const mountScreen = () => {
+      const screenCategoriesToShow = []
+      
+      const allPosts = {
+        name: 'Todos os Posts',
+        posts: posts,
+        postsCount: posts
+          .map(post => post.page_views)
+          .reduce((previousValue, currentValue) => previousValue + currentValue, 0),
+        index: 0,
+      
+      }
+      screenCategoriesToShow.push(allPosts)
+      
+      categories.map((category, index) => {
+        return {
+          name: category.name,
+          posts: posts
+            .filter(post => post.categories.includes(category.id)),
+          postsCount: posts
+            .filter(post => post.categories.includes(category.id))
+            ?.map((post) => post).map(post => post.page_views)
+            .reduce((previousValue, currentValue) => previousValue + currentValue, 0),
+          index: index+1,
+        }
+      }).forEach((category) => screenCategoriesToShow.push(category))
+
+      setAllCategories(screenCategoriesToShow);
+    }
+
+    mountScreen();
+
+  }, [])
+  
+  const orderFunctions = {
+    'Padrão': () => defaultOrder(),
+    'A-Z': () => alphabeticOrderCresc(),
+    'Z-A': () => alphabeticOrderDec(),
+    'Mais Visualizados': () => moreViewsOrder(),
+    'Menos Visualizados': () => lessViewsOrder(),
+  }
+
+  const defaultOrder = () => {
+    let categoriesToSort = allCategories.map((category) => category.index);
+
+    categoriesToSort.sort((c1, c2) => {
+      return c1 - c2
+    })
+
+    console.log(categoriesToSort.map(category => category))
+
+    let result = categoriesToSort.map((category) => allCategories.filter(item => item.index === category)[0])
+    console.log(result)
+
+    setAllCategories(result)
+  }
+
+  const alphabeticOrderCresc = () => {
+    let categoriesToSort = allCategories.map((category, index) => {
+      return { index, name: category.name}
+    });
+
+    categoriesToSort.sort((c1, c2) => {
+      if (c1.name > c2.name) {
+        return 1
+      }
+      if (c1.name < c2.name) {
+        return -1
+      }
+      return 0
+    })
+
+    let result = categoriesToSort.map(category => allCategories[category.index])
+    
+
+    setAllCategories(result)
+  }
+
+  const alphabeticOrderDec = () => {
+    let categoriesToSort = allCategories;
+    setAllCategories(categoriesToSort.sort((c1, c2) => {
+      if (c1.name > c2.name) {
+        return -1
+      }
+      if (c1.name < c2.name) {
+        return 1
+      }
+      return 0
+    })
+    )
+  }
+
+  const moreViewsOrder = () => {
+    let categoriesToSort = allCategories;
+    setAllCategories(categoriesToSort.sort((c1, c2) => {
+      if (c1.postsCount > c2.postsCount) {
+        return -1
+      }
+      if (c1.postsCount < c2.postsCount) {
+        return 1
+      }
+      return 0
+    })
+    )
+  }
+
+  const lessViewsOrder = () => {
+    let categoriesToSort = allCategories;
+    setAllCategories(categoriesToSort.sort((c1, c2) => {
+      if (c1.postsCount > c2.postsCount) {
+        return 1
+      }
+      if (c1.postsCount < c2.postsCount) {
+        return -1
+      }
+      return 0
+    })
+    )
+  }
+
   const onSelectedValue = (option) => {
     setOption(option.value);
+    orderFunctions[option.value]();
     let newOptions = options.map(item => item)
     newOptions.forEach(item => item !== option ? item.selected = false : item.selected = true)
     setOptions(newOptions);
-    console.log(options)
     setIconOption('expand-more');
-    setIsModalVisible(false);
+    setOnPressed(false);
   }
 
   const navigate = (post, mediaURL) => {
@@ -63,10 +187,9 @@ const Home = ({ route, navigation}) => {
       <ScrollView key={index}>
         <Header title={category.name} />
         <ScrollView horizontal={true}>
-            {
-              posts.filter(post => post.categories.includes(category.id))
-              ?.map((post, index) => mountCard(post, index))
-            }
+          { 
+            category.posts.map((post, index) => mountCard(post, index))
+          }
         </ScrollView>
       </ScrollView>
     );
@@ -93,7 +216,6 @@ const Home = ({ route, navigation}) => {
         backgroundColor="transparent"
         translucent={true}
       />
-
       <View >
         
         {posts && categories &&
@@ -101,11 +223,14 @@ const Home = ({ route, navigation}) => {
             <View style={styles.orderView}>
               <Text style={styles.orderText}>ORDENAR POR</Text>
               <TouchableOpacity 
-                style={[styles.selectButton, isModalVisible ? styles.selectButtonPressed: styles.selectButtonReleased]} 
+                style={[styles.selectButton, onPressed ? styles.selectButtonPressed: styles.selectButtonReleased]} 
                 onPress={() => {
-                  setIsModalVisible(!isModalVisible); 
+                  setOnPressed(!onPressed);
                   if(iconOption === 'expand-more') {
                     setIconOption('expand-less')
+                  }
+                  else{
+                    setIconOption('expand-more')
                   }
                 }}>
                 <Text style={styles.selectButtonText}>{option}</Text>
@@ -117,25 +242,17 @@ const Home = ({ route, navigation}) => {
               
             </View>
             <ScrollView style={styles.viewScrollers}>
-              <Header title={'Todos os Posts'} />
-
-              <ScrollView horizontal={true}>
-                {
-                  posts.map((post, index) => mountCard(post, index))
-                }
-              </ScrollView>
-
               {
-                categories.map((category, index) => {
-                  if (posts.filter(post => post.categories.includes(category.id)).length > 0) {
+                allCategories?.map((category, index) => {
+                  if (category.postsCount > 0) {
                     return categoryScrollView(category, index)
                   }
                   else{
-                    return 
+                    return false
                   }
                 })
               }
-              {isModalVisible &&
+              {onPressed &&
                 <View style={styles.menu} >
                   {options.map((item, index) => mountMenu(item, index))}
                 </View>
@@ -144,9 +261,7 @@ const Home = ({ route, navigation}) => {
             </ScrollView>
             <Footer/>
         </ScrollView>
-          
         }
-
       </View>
     </View>
   )
@@ -217,7 +332,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: 141,
+    width: 140,
     height: 200,
     paddingVertical: 10,
     marginRight: 0,

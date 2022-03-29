@@ -31,6 +31,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.mediumSeaGreen,
         justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 20,
         padding: 20,
     },
     footerImage: {
